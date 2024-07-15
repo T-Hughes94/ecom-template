@@ -70,7 +70,7 @@
 
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import validates, relationship
+from sqlalchemy.orm import validates
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
@@ -86,6 +86,8 @@ class User(db.Model, SerializerMixin):
     
     orders = db.relationship('Order', back_populates='user')
     carts = db.relationship('Cart', back_populates='user')
+
+    serialize_rules = ('-password_hash', '-orders.user', '-carts.user')
 
     @hybrid_property
     def password(self):
@@ -116,6 +118,8 @@ class Category(db.Model, SerializerMixin):
     
     products = db.relationship('Product', back_populates='category')
 
+    serialize_rules = ('-products.category')
+
 
 class Product(db.Model, SerializerMixin):
     __tablename__ = 'products'
@@ -130,6 +134,8 @@ class Product(db.Model, SerializerMixin):
     category = db.relationship('Category', back_populates='products')
     order_items = db.relationship('OrderItem', back_populates='product')
     cart_items = db.relationship('CartItem', back_populates='product')
+
+    serialize_rules = ('-order_items.product', '-cart_items.product')
 
     @validates('name', 'description', 'price', 'stock')
     def validate_fields(self, key, value):
@@ -155,6 +161,8 @@ class Order(db.Model, SerializerMixin):
     user = db.relationship('User', back_populates='orders')
     order_items = db.relationship('OrderItem', back_populates='order')
 
+    serialize_rules = ('-user.orders', '-order_items.order')
+
     @validates('total_amount', 'status')
     def validate_fields(self, key, value):
         if key == 'total_amount' and (value is None or not isinstance(value, (int, float)) or value < 0):
@@ -175,6 +183,8 @@ class OrderItem(db.Model, SerializerMixin):
     order = db.relationship('Order', back_populates='order_items')
     product = db.relationship('Product', back_populates='order_items')
 
+    serialize_rules = ('-order.order_items', '-product.order_items')
+
     @validates('quantity', 'price')
     def validate_fields(self, key, value):
         if key == 'quantity' and (value is None or not isinstance(value, int) or value < 0):
@@ -193,6 +203,8 @@ class Cart(db.Model, SerializerMixin):
     user = db.relationship('User', back_populates='carts')
     cart_items = db.relationship('CartItem', back_populates='cart')
 
+    serialize_rules = ('-user.carts', '-cart_items.cart')
+
 
 class CartItem(db.Model, SerializerMixin):
     __tablename__ = 'cart_items'
@@ -203,6 +215,8 @@ class CartItem(db.Model, SerializerMixin):
     
     cart = db.relationship('Cart', back_populates='cart_items')
     product = db.relationship('Product', back_populates='cart_items')
+
+    serialize_rules = ('-cart.cart_items', '-product.cart_items')
 
     @validates('quantity')
     def validate_quantity(self, key, quantity):
