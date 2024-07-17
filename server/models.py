@@ -87,7 +87,7 @@ class User(db.Model, SerializerMixin):
     orders = db.relationship('Order', back_populates='user')
     carts = db.relationship('Cart', back_populates='user')
 
-    serialize_rules = ('-password_hash', '-orders.user', '-carts.user')
+    serialize_only = ('id', 'username', 'email', 'created_at')
 
     @hybrid_property
     def password(self):
@@ -118,7 +118,7 @@ class Category(db.Model, SerializerMixin):
     
     products = db.relationship('Product', back_populates='category')
 
-    serialize_rules = ('-products.category')
+    serialize_only = ('id', 'name')
 
 
 class Product(db.Model, SerializerMixin):
@@ -135,7 +135,7 @@ class Product(db.Model, SerializerMixin):
     order_items = db.relationship('OrderItem', back_populates='product')
     cart_items = db.relationship('CartItem', back_populates='product')
 
-    serialize_rules = ('-order_items.product', '-cart_items.product')
+    serialize_only = ('id', 'name', 'description', 'price', 'stock', 'category_id', 'created_at')
 
     @validates('name', 'description', 'price', 'stock')
     def validate_fields(self, key, value):
@@ -161,7 +161,7 @@ class Order(db.Model, SerializerMixin):
     user = db.relationship('User', back_populates='orders')
     order_items = db.relationship('OrderItem', back_populates='order')
 
-    serialize_rules = ('-user.orders', '-order_items.order')
+    serialize_only = ('id', 'user_id', 'total_amount', 'status', 'created_at')
 
     @validates('total_amount', 'status')
     def validate_fields(self, key, value):
@@ -183,7 +183,7 @@ class OrderItem(db.Model, SerializerMixin):
     order = db.relationship('Order', back_populates='order_items')
     product = db.relationship('Product', back_populates='order_items')
 
-    serialize_rules = ('-order.order_items', '-product.order_items')
+    serialize_only = ('id', 'order_id', 'product_id', 'quantity', 'price')
 
     @validates('quantity', 'price')
     def validate_fields(self, key, value):
@@ -203,7 +203,7 @@ class Cart(db.Model, SerializerMixin):
     user = db.relationship('User', back_populates='carts')
     cart_items = db.relationship('CartItem', back_populates='cart')
 
-    serialize_rules = ('-user.carts', '-cart_items.cart')
+    serialize_only = ('id', 'user_id', 'created_at')
 
 
 class CartItem(db.Model, SerializerMixin):
@@ -216,10 +216,11 @@ class CartItem(db.Model, SerializerMixin):
     cart = db.relationship('Cart', back_populates='cart_items')
     product = db.relationship('Product', back_populates='cart_items')
 
-    serialize_rules = ('-cart.cart_items', '-product.cart_items')
+    serialize_only = ('id', 'cart_id', 'product_id', 'quantity')
 
     @validates('quantity')
     def validate_quantity(self, key, quantity):
         if quantity is None or not isinstance(quantity, int) or quantity < 0:
             raise ValueError('Quantity must be a non-negative integer')
         return quantity
+
